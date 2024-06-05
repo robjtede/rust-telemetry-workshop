@@ -5,6 +5,7 @@ use subscriber::init_test_subscriber;
 #[tokio::test]
 async fn failure() {
     let logging_buffer = init_test_subscriber();
+
     let order_numbers = vec![3, 4, 5];
 
     subscriber::get_total(&order_numbers).unwrap_err();

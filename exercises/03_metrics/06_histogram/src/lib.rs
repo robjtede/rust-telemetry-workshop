@@ -25,10 +25,16 @@
 use std::thread;
 use std::time::Duration;
 
+use metrics::Unit;
+
 fn do_something(t: Duration) {
     thread::sleep(t);
     // TODO: register how long it takes to run this function using an `invocation_duration_seconds`
     //   histogram.
+
+    metrics::describe_histogram!("invocation_duration_seconds", Unit::Seconds, "");
+
+    metrics::histogram!("invocation_duration_seconds").record(t.as_secs_f64())
 }
 
 #[cfg(test)]

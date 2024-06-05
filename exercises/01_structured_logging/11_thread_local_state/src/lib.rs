@@ -59,15 +59,21 @@ pub use subscriber::init_test_subscriber;
 /// Manipulate the spans we create in this function to match the output in the test below.
 pub fn do_something() -> std::thread::JoinHandle<()> {
     let spawner_span = tracing::info_span!("spawner");
+    spawner_span.in_scope(|| {});
 
-    let handle = std::thread::spawn(move || {
-        let spawned_span = tracing::info_span!(parent: parent, "spawned1");
+    let handle = std::thread::spawn({
+        let spawner_span = spawner_span.clone();
+        move || {
+            let spawned_span = tracing::info_span!(parent: &spawner_span, "spawned1").entered();
+        }
     });
 
     handle.join().unwrap();
 
     std::thread::spawn(move || {
         let spawned_span = tracing::info_span!("spawned2");
+        let spawned_span = spawned_span.follows_from(&spawner_span);
+        spawned_span.in_scope(|| {});
     })
 }
 

@@ -14,7 +14,11 @@ pub fn init_test_subscriber() -> MockWriter {
     // TODO: Install the custom panic hook here
     // You can try to write one on your own, or you can choose to lean on
     // the `tracing-panic` crate
-    // todo!();
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |panic_info| {
+        (prev_hook)(panic_info);
+        tracing_panic::panic_hook(panic_info);
+    }));
 
     writer2
 }

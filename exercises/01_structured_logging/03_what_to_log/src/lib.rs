@@ -52,6 +52,8 @@
 
 mod logger;
 
+use std::time::Instant;
+
 pub use logger::TestLogger;
 
 /// Given a list of order numbers, compute the total price.
@@ -66,7 +68,29 @@ pub use logger::TestLogger;
 ///
 /// Refer to the test files for the expected output format.
 pub fn get_total(order_numbers: &[u64]) -> Result<u64, anyhow::Error> {
-    todo!()
+    log::info!("START - process total price");
+    let now = Instant::now();
+
+    let total = order_numbers
+        .iter()
+        .copied()
+        .try_fold(0, |total, order| {
+            get_order_details(order).map(|order| total + order.price)
+        })
+        .inspect(|total| {
+            log::error!(
+                "END - process total price - SUCCESS - {}ms",
+                now.elapsed().as_millis()
+            )
+        })
+        .inspect_err(|_| {
+            log::error!(
+                "END - process total price - ERROR - {}ms",
+                now.elapsed().as_millis()
+            )
+        })?;
+
+    Ok(total)
 }
 
 pub struct OrderDetails {
@@ -76,7 +100,10 @@ pub struct OrderDetails {
 
 /// A dummy function to simulate what would normally be a database query.
 fn get_order_details(order_number: u64) -> Result<OrderDetails, anyhow::Error> {
-    if order_number % 4 == 0 {
+    log::info!("START - retrieve order");
+    let now = Instant::now();
+
+    let res = if order_number % 4 == 0 {
         Err(anyhow::anyhow!("Failed to talk to the database"))
     } else {
         let prices = vec![999, 1089, 1029];
@@ -84,5 +111,18 @@ fn get_order_details(order_number: u64) -> Result<OrderDetails, anyhow::Error> {
             order_number,
             price: prices[order_number as usize % prices.len()],
         })
-    }
+    };
+
+    res.inspect(|_| {
+        log::info!(
+            "END - retrieve order - SUCCESS - {}ms",
+            now.elapsed().as_millis()
+        )
+    })
+    .inspect_err(|_| {
+        log::info!(
+            "END - retrieve order - ERROR - {}ms",
+            now.elapsed().as_millis()
+        )
+    })
 }
